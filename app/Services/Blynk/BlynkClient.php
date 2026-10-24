@@ -42,7 +42,13 @@ class BlynkClient
 
         $seconds = max(1, (int) config('blynk.cache_seconds', 1));
 
-        return Cache::remember(self::CACHE_KEY, now()->addSeconds($seconds), fn (): Telemetry => $this->fetch());
+        $payload = Cache::remember(
+            self::CACHE_KEY,
+            now()->addSeconds($seconds),
+            fn (): array => $this->fetch()->toArray(),
+        );
+
+        return Telemetry::fromArray($payload);
     }
 
     public function setBuzzer(bool $enabled): void

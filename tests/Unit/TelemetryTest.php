@@ -41,4 +41,25 @@ class TelemetryTest extends TestCase
         $this->assertFalse($payload['online']);
         $this->assertSame('Perangkat tidak dapat dihubungi.', $payload['error']);
     }
+
+    public function test_it_can_be_rehydrated_from_a_cached_array(): void
+    {
+        $original = new Telemetry(
+            configured: true,
+            online: true,
+            temperatureHot: 64.5,
+            temperatureCold: 31.2,
+            deltaTemperature: 33.3,
+            voltage: 0.512,
+            current: 12.34,
+            power: 6.32,
+            statusCode: 2,
+        );
+
+        $copy = Telemetry::fromArray($original->toArray());
+
+        $this->assertSame($original->toArray()['readings'], $copy->toArray()['readings']);
+        $this->assertSame(2, $copy->resolvedStatusCode());
+        $this->assertTrue($copy->online);
+    }
 }

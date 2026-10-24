@@ -28,7 +28,6 @@ const history = [];
 let gaugeMax = 150;
 let pollTimer = null;
 let inFlight = null;
-
 /* --------------------------------------------------------------- formatting */
 
 const format = (value, digits) => {
@@ -135,13 +134,14 @@ function drawChart() {
         ctx.lineJoin = 'round';
 
         let started = false;
+        const offset = MAX_POINTS - history.length;
 
         history.forEach((point, index) => {
             if (point[key] === null) {
                 return;
             }
 
-            const x = padLeft + (history.length === 1 ? chartWidth : (chartWidth * index) / (MAX_POINTS - 1));
+            const x = padLeft + (chartWidth * (offset + index)) / (MAX_POINTS - 1);
             const y = padTop + chartHeight * (1 - (point[key] - min) / (max - min));
 
             if (!started) {
@@ -234,18 +234,22 @@ function renderOffline(error) {
 /* -------------------------------------------------------------------- fetch */
 
 async function fetchTelemetry() {
+    clearTimeout(pollTimer);
+
     if (inFlight) {
         inFlight.abort();
     }
 
-    inFlight = new AbortController();
-    const timeout = setTimeout(() => inFlight.abort(), 8000);
+    const controller = new AbortController();
+    inFlight = controller;
+
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
     try {
         const response = await fetch('/api/telemetry', {
             headers: { Accept: 'application/json' },
             cache: 'no-store',
-            signal: inFlight.signal,
+            signal: controller.signal,
         });
 
         if (!response.ok) {
@@ -259,13 +263,15 @@ async function fetchTelemetry() {
         }
     } finally {
         clearTimeout(timeout);
-        inFlight = null;
-    }
-}
 
-function schedule() {
-    clearInterval(pollTimer);
-    pollTimer = setInterval(fetchTelemetry, REFRESH_MS);
+        if (inFlight === controller) {
+            inFlight = null;
+        }
+
+        if (!document.hidden) {
+            pollTimer = setTimeout(fetchTelemetry, REFRESH_MS);
+        }
+    }
 }
 
 /* ----------------------------------------------------------------- controls */
@@ -322,16 +328,15 @@ function bindControls() {
 
 document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-        clearInterval(pollTimer);
+        clearTimeout(pollTimer);
+        inFlight?.abort();
         return;
     }
 
     fetchTelemetry();
-    schedule();
 });
 
 window.addEventListener('resize', drawChart);
 
 bindControls();
 fetchTelemetry();
-schedule();

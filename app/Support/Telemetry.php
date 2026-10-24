@@ -26,6 +26,32 @@ final readonly class Telemetry
     }
 
     /**
+     * Rehydrate a snapshot from its array representation (used by the cache).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    public static function fromArray(array $data): self
+    {
+        $readings = $data['readings'] ?? [];
+        $number = static fn (string $key): ?float => is_numeric($readings[$key] ?? null)
+            ? (float) $readings[$key]
+            : null;
+
+        return new self(
+            configured: (bool) ($data['configured'] ?? false),
+            online: (bool) ($data['online'] ?? false),
+            temperatureHot: $number('temperature_hot'),
+            temperatureCold: $number('temperature_cold'),
+            deltaTemperature: $number('delta_temperature'),
+            voltage: $number('voltage'),
+            current: $number('current'),
+            power: $number('power'),
+            statusCode: isset($data['status']['code']) ? (int) $data['status']['code'] : null,
+            error: isset($data['error']) ? (string) $data['error'] : null,
+        );
+    }
+
+    /**
      * Status code sent by the device, or one derived from the hot side
      * temperature when the device sends an unexpected value.
      */
