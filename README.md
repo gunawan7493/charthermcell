@@ -45,6 +45,7 @@ Isi `BLYNK_TOKEN` di `.env` dengan auth token Blynk (jangan commit).
 | `BLYNK_TIMEOUT` | `8` | Timeout request ke Blynk (detik) |
 | `BLYNK_CACHE_SECONDS` | `1` | Lama cache snapshot telemetry |
 | `BLYNK_DEVICE_NAME` | `CharThermCell-01` | Nama perangkat di footer |
+| `BLYNK_CONTROLS_ENABLED` | `true` | Aktifkan tombol kontrol (butuh datastream V7/V8) |
 
 Pemetaan datastream ada di `config/blynk.php` (V0–V6 untuk pembacaan, V7/V8 untuk
 kontrol). Hanya pin di `blynk.controls` yang bisa ditulis.
@@ -58,10 +59,12 @@ php artisan serve
 ## Test
 
 ```bash
-php artisan test
+composer test
 ```
 
-Test tidak memanggil Blynk sungguhan (memakai `Http::fake`).
+Test tidak memanggil Blynk sungguhan (memakai `Http::fake`). `composer test`
+membersihkan config cache lebih dulu supaya hasil tes tidak terpengaruh
+konfigurasi produksi.
 
 ## Deployment
 
